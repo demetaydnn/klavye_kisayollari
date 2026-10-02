@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klavye Kısayolları Oyunu</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f6fb;margin:0;padding:24px;color:#1f2937}
+.wrap{max-width:900px;margin:auto;background:#fff;border-radius:24px;padding:28px;box-shadow:0 12px 30px rgba(0,0,0,.12)}
+h1{text-align:center;font-size:38px;margin:0 0 10px}
+.sub{text-align:center;font-size:18px;color:#475569}
+.status{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:20px 0}
+.badge{background:#eef2ff;padding:10px 16px;border-radius:999px;font-weight:700}
+.card{background:#f8fafc;border:2px dashed #cbd5e1;border-radius:20px;padding:28px;text-align:center}
+.emoji{font-size:70px}.card h2{font-size:30px}.card p{font-size:20px;line-height:1.5}
+.keys{display:flex;justify-content:center;align-items:center;gap:12px;margin:24px 0}
+.key{background:#111827;color:#fff;padding:16px 22px;border-radius:12px;font-size:26px;font-weight:800;min-width:90px}
+.feedback{font-size:22px;font-weight:800;min-height:34px}.ok{color:#15803d}.no{color:#b91c1c}
+button{border:0;border-radius:12px;padding:12px 18px;font-size:17px;font-weight:700;cursor:pointer;margin:6px}
+.hint{display:none;background:#fff7ed;border:1px solid #fed7aa;padding:10px 14px;border-radius:12px;margin:10px auto;color:#9a3412;font-weight:700}
+.done{display:none;text-align:center;padding:30px}.done h2{font-size:34px}
+.note{text-align:center;color:#64748b;margin-top:18px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>⌨️ Klavye Kısayolları Oyunu</h1>
+<p class="sub">Görevi oku ve doğru kısayolu klavyeden uygula!</p>
+<div class="status">
+<div class="badge">Puan: <span id="score">0</span></div>
+<div class="badge">Görev: <span id="taskNo">1</span>/8</div>
+<div class="badge">Hata: <span id="mistakes">0</span></div>
+</div>
+
+<div id="game" class="card">
+<div id="emoji" class="emoji">🤖</div>
+<h2 id="title"></h2>
+<p id="desc"></p>
+<div id="hint" class="hint"></div>
+<div class="keys"><div class="key">Ctrl</div><div style="font-size:30px;font-weight:800">+</div><div id="key2" class="key">?</div></div>
+<div id="feedback" class="feedback"></div>
+<button id="hintBtn">💡 İpucu</button>
+<button id="restartBtn">🔄 Baştan Başla</button>
+</div>
+
+<div id="done" class="done">
+<div style="font-size:54px">🌟🏆🌟</div>
+<h2>Tebrikler!</h2>
+<p id="result" style="font-size:22px"></p>
+<button onclick="restartGame()">Yeniden Oyna</button>
+</div>
+
+<p class="note">Oyuna başlamadan önce sayfaya bir kez tıklayın. Ctrl tuşuna basılı tutup doğru harfe basın.</p>
+</div>
+
+<script>
+const tasks=[
+{t:"Robotu Kopyala!",d:"Bu robotun bir kopyasını oluşturmak istiyorsun.",k:"c",n:"Kopyala",e:"🤖",h:"Copy = Kopyala"},
+{t:"Kopyayı Yapıştır!",d:"Kopyaladığın robotu ekrana yerleştir.",k:"v",n:"Yapıştır",e:"🤖🤖",h:"Kopyalanan şeyi yeni yere ekler."},
+{t:"Yıldızı Kes!",d:"Yıldızı bulunduğu yerden kaldırıp başka bir yere taşımak istiyorsun.",k:"x",n:"Kes",e:"⭐",h:"Makas gibi düşün: Kes!"},
+{t:"Hata Yaptın!",d:"Yanlışlıkla bir resmi sildin. Son işlemi geri almak istiyorsun.",k:"z",n:"Geri Al",e:"😮",h:"Zamanı geri al."},
+{t:"Hepsini Seç!",d:"Ekrandaki tüm metni bir kerede seçmek istiyorsun.",k:"a",n:"Tümünü Seç",e:"📝",h:"All = Hepsi"},
+{t:"Çalışmanı Kaydet!",d:"Hazırladığın çalışmanın kaybolmamasını istiyorsun.",k:"s",n:"Kaydet",e:"💾",h:"Save = Kaydet"},
+{t:"Bir Kez Daha Kopyala!",d:"Bir resmi çoğaltmadan önce onu panoya almak istiyorsun.",k:"c",n:"Kopyala",e:"🖼️",h:"Copy kelimesini hatırla."},
+{t:"Son Görev: Geri Al!",d:"Yanlış yaptığın son işlemi hemen düzelt.",k:"z",n:"Geri Al",e:"🚀",h:"Zamanı geri sar!"}
+];
+let i=0,score=0,mistakes=0,lock=false;
+const q=id=>document.getElementById(id);
+function render(){
+ let x=tasks[i]; q("title").textContent=x.t; q("desc").textContent=x.d; q("emoji").textContent=x.e;
+ q("hint").textContent="İpucu: "+x.h; q("hint").style.display="none"; q("key2").textContent="?";
+ q("feedback").textContent=""; q("feedback").className="feedback"; q("taskNo").textContent=i+1;
+ q("score").textContent=score; q("mistakes").textContent=mistakes; lock=false;
+}
+function next(){
+ i++;
+ if(i>=tasks.length){
+   q("game").style.display="none"; q("done").style.display="block";
+   q("result").textContent=`Toplam ${score} puan kazandın. ${mistakes===0?"Tüm görevleri hatasız tamamladın! 🎉":"Harika! Bir tur daha oynayarak daha da hızlanabilirsin. 👏"}`;
+ } else render();
+}
+document.addEventListener("keydown",e=>{
+ if(lock||i>=tasks.length) return;
+ let k=e.key.toLowerCase(), ctrl=e.ctrlKey||e.metaKey;
+ if(!ctrl) return;
+ if(["c","v","x","z","a","s"].includes(k)) e.preventDefault();
+ let x=tasks[i];
+ if(k===x.k){
+   lock=true; score+=10; q("score").textContent=score; q("key2").textContent=k.toUpperCase();
+   q("feedback").textContent="✅ Doğru! "+x.n; q("feedback").className="feedback ok";
+   setTimeout(next,800);
+ }else if(["c","v","x","z","a","s"].includes(k)){
+   mistakes++; q("mistakes").textContent=mistakes; q("feedback").textContent="❌ Bu değil. Bir daha dene!";
+   q("feedback").className="feedback no";
+ }
+});
+q("hintBtn").onclick=()=>q("hint").style.display=q("hint").style.display==="none"?"block":"none";
+q("restartBtn").onclick=restartGame;
+function restartGame(){i=0;score=0;mistakes=0;q("done").style.display="none";q("game").style.display="block";render();}
+render();
+</script>
+</body>
+</html>
